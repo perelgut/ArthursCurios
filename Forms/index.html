@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LitRPG Story Bible</title>
+</head>
+<body>
+<div class="wrap">
+  <h1>Story Bible</h1>
+  <p class="sub">Pick a type: <strong>Show</strong> what's there, or <strong>Add</strong> something new.</p>
+  <p class="totals" id="totals">Loading index…</p>
+  <div class="grid" id="grid"></div>
+  <div id="dupPanel" class="panel dup" style="display:none"></div>
+  <div id="anomPanel" class="panel" style="display:none"></div>
+  <div class="note">
+    Lists read a generated index (<code>bible_data.js</code>) so the pages work offline. After you add or move entries, run <code>python build_index.py</code> in this folder to rebuild it (full entry text + a re-check for anything filed in the wrong place).
+  </div>
+</div>
+<script src="bible_data.js"></script>
+<script src="bib_core.js"></script>
+<script>
+(function(){
+  var B = BIB.data();
+  document.getElementById('totals').textContent =
+    (B.entries.length) + ' entries indexed · ' + (B.generated || '');
+  var grid = document.getElementById('grid');
+  grid.innerHTML = BIB.TYPES.map(function(t){
+    var n = (B.counts && B.counts[t]!=null) ? B.counts[t] : BIB.byType(t).length;
+    var showBtn = n ? '<a class="btn" href="list.html?type='+encodeURIComponent(t)+'">📚 Show ('+n+')</a>'
+                    : '<a class="btn ghost" href="list.html?type='+encodeURIComponent(t)+'">📚 Show (0)</a>';
+    return '<div class="tcard">'+
+      '<h2>'+BIB.esc(t)+' <span class="count'+(n?'':' zero')+'">'+n+'</span></h2>'+
+      '<p>'+BIB.esc(BIB.BLURB[t]||'')+'</p>'+
+      '<div class="btns">'+showBtn+
+        '<a class="btn ghost" href="'+BIB.FORM[t]+'">✎ Add new</a></div>'+
+    '</div>';
+  }).join('');
+
+  var dups = B.duplicates||[];
+  if(dups.length){
+    var dp=document.getElementById('dupPanel'); dp.style.display='';
+    dp.innerHTML='<strong>Shared names</strong> (one name, several entries — usually intentional)<ul>'+
+      dups.map(function(d){return '<li><strong>'+BIB.esc(d.name)+'</strong> — '+d.types.join(', ')+'</li>';}).join('')+'</ul>';
+  }
+  var an=document.getElementById('anomPanel'), anoms=B.anomalies||[];
+  if(anoms.length){
+    an.className='panel warn'; an.style.display='';
+    an.innerHTML='<strong>⚠ Possibly filed in the wrong place</strong><ul>'+
+      anoms.map(function(a){return '<li><strong>'+BIB.esc(a.name)+'</strong> ('+a.type+') is in '+a.foundIn+' — expected '+a.expected+'</li>';}).join('')+'</ul>';
+  } else {
+    an.className='panel ok'; an.style.display='';
+    an.innerHTML='✓ Every indexed entry sits in the file its type belongs to.';
+  }
+})();
+</script>
+</body>
+</html>

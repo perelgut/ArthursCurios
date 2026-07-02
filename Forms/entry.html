@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Bible — entry</title>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <a class="back" id="back" href="index.html">&larr; Back</a>
+  <div id="content"></div>
+</div>
+<script src="bible_data.js"></script>
+<script src="bib_core.js"></script>
+<script>
+(function(){
+  var i = BIB.qs('i');
+  var e = BIB.get(i);
+  var content = document.getElementById('content');
+  if(!e){ content.innerHTML = '<h1>Not found</h1><p class="muted">No entry at that index. The index may have been rebuilt. <a href="index.html">Start over</a>.</p>'; return; }
+  document.title = 'Story Bible — ' + e.name;
+  document.getElementById('back').href = 'list.html?type=' + encodeURIComponent(e.type);
+  document.getElementById('back').textContent = '← All ' + e.type;
+
+  var badges = '<span class="badge">'+BIB.esc(e.type)+(e.subtype?' · '+BIB.esc(e.subtype):'')+'</span>'+
+               '<span class="badge">'+BIB.esc(e.file)+'</span>';
+  var anom = (BIB.data().anomalies||[]).filter(function(a){return a.name===e.name && a.foundIn===e.file;})[0];
+  if(anom) badges += '<span class="badge warn">⚠ expected in '+BIB.esc(anom.expected)+'</span>';
+
+  content.innerHTML =
+    '<h1>'+BIB.esc(e.name)+'</h1>'+
+    '<div class="badges" style="margin:0 0 10px">'+badges+'</div>'+
+    (e.meta ? '<div class="strip">'+BIB.mdInline(e.meta)+'</div>' : '')+
+    '<div class="body">'+BIB.mdBlock(e.body)+'</div>';
+
+  // prev / next within the same type (alphabetical)
+  var sibs = BIB.data().entries.map(function(x,ix){return {e:x,i:ix};})
+    .filter(function(x){return x.e.type===e.type;})
+    .sort(function(a,b){return a.e.name.localeCompare(b.e.name);});
+  var pos = sibs.findIndex(function(x){return x.i==i;});
+  var nav = '<nav class="pager">';
+  nav += pos>0 ? '<a class="btn ghost" href="entry.html?i='+sibs[pos-1].i+'">← '+BIB.esc(sibs[pos-1].e.name)+'</a>' : '<span></span>';
+  nav += pos>=0 && pos<sibs.length-1 ? '<a class="btn ghost" href="entry.html?i='+sibs[pos+1].i+'">'+BIB.esc(sibs[pos+1].e.name)+' →</a>' : '<span></span>';
+  nav += '</nav>';
+  content.insertAdjacentHTML('beforeend', nav);
+})();
+</script>
+</body>
+</html>

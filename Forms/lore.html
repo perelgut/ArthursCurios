@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lore — Story Bible Entry</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Georgia,'Times New Roman',serif;background:#1a1714;color:#efe7da;line-height:1.5}
+  .wrap{max-width:820px;margin:0 auto;padding:40px 24px 90px}
+  a.back{color:#c8923d;text-decoration:none;font-size:14px}
+  h1{font-size:28px;margin:8px 0 4px;color:#f3e9d8}
+  .sub{color:#b9ab95;margin:0 0 26px;font-style:italic;font-size:15px}
+  fieldset{border:1px solid #3a3128;border-radius:10px;margin:0 0 22px;padding:18px 20px 22px;background:#221d17}
+  legend{color:#e8b765;font-size:16px;padding:0 8px;font-weight:bold}
+  label{display:block;margin:0 0 14px;font-size:14px;color:#d8cab2}
+  .hint{color:#8d8170;font-style:italic;font-size:12px}
+  input,textarea{width:100%;margin-top:5px;background:#15120f;border:1px solid #443a2d;border-radius:6px;color:#f1ead8;padding:9px 11px;font-family:inherit;font-size:15px}
+  input:focus,textarea:focus{outline:none;border-color:#c8923d}
+  textarea{resize:vertical;line-height:1.55}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+  .bar{position:sticky;bottom:0;background:#1a1714ee;border-top:1px solid #3a3128;padding:14px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;backdrop-filter:blur(4px)}
+  button{font-family:inherit;font-size:14px;border-radius:7px;padding:9px 16px;border:1px solid #c8923d;background:#c8923d;color:#1a1714;cursor:pointer;font-weight:bold}
+  button.ghost{background:transparent;color:#c8923d}
+  button:hover{filter:brightness(1.08)}
+  #flash{color:#8fd18f;font-size:14px;opacity:0;transition:opacity .2s}
+  #output{min-height:180px;font-family:Menlo,Consolas,monospace;font-size:13px;line-height:1.5}
+  h2.out{font-size:15px;color:#b9ab95;margin:24px 0 8px}
+</style>
+</head>
+<body data-form="lore" data-type="Lore">
+<div class="wrap">
+  <a class="back" href="index.html">&larr; All forms</a>
+  <h1>Lore</h1>
+  <p class="sub">A rule, history, magical concept, prophecy, or law of nature. Output pastes under a new <strong>## Name</strong> block in 04_Worldbuilding.md.</p>
+
+  <fieldset>
+    <legend>Entry metadata</legend>
+    <label>Name <span class="hint">(becomes the ## heading)</span>
+      <input type="text" id="entryName" placeholder="e.g. The Bloodline"></label>
+    <div class="row">
+      <label>Subtype <span class="hint">(optional)</span>
+        <input type="text" id="subtype" placeholder="magical concept / history / prophecy / law ..."></label>
+      <label>First Appearance <input type="text" id="firstapp" placeholder="Book 1, Ch. 1"></label>
+    </div>
+    <label>Related <input type="text" id="related" placeholder="comma-separated links"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Details</legend>
+    <label>Description <textarea id="description" data-md="section" data-label="Description" rows="7"></textarea></label>
+  </fieldset>
+
+  <h2 class="out">Generated Markdown</h2>
+  <textarea id="output" readonly placeholder="Click Generate Markdown..."></textarea>
+
+  <div class="bar">
+    <button onclick="genMarkdown()">Generate Markdown</button>
+    <button class="ghost" onclick="copyMd()">Copy</button>
+    <button class="ghost" onclick="downloadMd()">Download .md</button>
+    <button class="ghost" onclick="clearForm()">Clear</button>
+    <span id="flash"></span>
+  </div>
+</div>
+<script>
+function genMarkdown(){
+  const name=(document.getElementById('entryName').value||'').trim();
+  const type=document.body.dataset.type;
+  const sub=document.getElementById('subtype'); const subtype=sub?sub.value.trim():'';
+  let md='## '+(name||'(unnamed)')+'\n';
+  const parts=['**Type:** '+type+(subtype?' ('+subtype+')':'')];
+  const fa=document.getElementById('firstapp').value.trim(); if(fa)parts.push('**First Appearance:** '+fa);
+  const rel=document.getElementById('related').value.trim(); if(rel)parts.push('**Related:** '+rel);
+  md+=parts.join('  •  ')+'\n\n';
+  document.querySelectorAll('[data-md="section"]').forEach(e=>{ md+='### '+e.dataset.label+'\n'+e.value.trim()+'\n\n'; });
+  md=md.trimEnd()+'\n';
+  document.getElementById('output').value=md;
+  return md;
+}
+function copyMd(){ const md=genMarkdown(); const o=document.getElementById('output'); o.select();
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(md).then(()=>flash('Copied'),()=>{document.execCommand('copy');flash('Copied');}); }
+  else { document.execCommand('copy'); flash('Copied'); } }
+function downloadMd(){ const md=genMarkdown();
+  let n=(document.getElementById('entryName').value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'entry';
+  const b=new Blob([md],{type:'text/markdown'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=n+'.md'; document.body.appendChild(a); a.click(); a.remove(); }
+function flash(m){ const f=document.getElementById('flash'); f.textContent=m; f.style.opacity=1; setTimeout(()=>f.style.opacity=0,1300); }
+const FORMKEY='litrpg-'+document.body.dataset.form;
+function saveDraft(){ try{ const d={}; document.querySelectorAll('input,textarea').forEach(e=>{ if(e.id&&e.id!=='output') d[e.id]=e.value; }); localStorage.setItem(FORMKEY,JSON.stringify(d)); }catch(e){} }
+function loadDraft(){ try{ const s=localStorage.getItem(FORMKEY); if(!s)return; const d=JSON.parse(s); Object.keys(d).forEach(k=>{ const el=document.getElementById(k); if(el) el.value=d[k]; }); }catch(e){} }
+function clearForm(){ if(!confirm('Clear all fields and saved draft?'))return; document.querySelectorAll('input,textarea').forEach(e=>{ e.value=''; }); try{localStorage.removeItem(FORMKEY);}catch(e){} }
+document.addEventListener('input',saveDraft);
+window.addEventListener('DOMContentLoaded',loadDraft);
+</script>
+<script src="bible_data.js"></script>
+<script src="bible.js"></script>
+</body>
+</html>

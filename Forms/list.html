@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Bible — list</title>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; All types</a>
+  <h1 id="title">…</h1>
+  <p class="sub" id="sub"></p>
+  <div class="tools">
+    <input class="q" id="q" type="text" placeholder="Filter by name or text…">
+    <a class="btn ghost" id="addBtn" href="#">✎ Add new</a>
+  </div>
+  <div id="list"></div>
+</div>
+<script src="bible_data.js"></script>
+<script src="bib_core.js"></script>
+<script>
+(function(){
+  var type = BIB.qs('type') || 'Protagonist';
+  if(BIB.TYPES.indexOf(type)<0) type='Protagonist';
+  document.title = 'Story Bible — ' + type;
+  document.getElementById('title').textContent = type;
+  document.getElementById('addBtn').href = BIB.FORM[type] || 'index.html';
+
+  // pair each entry with its global index so item pages have stable URLs
+  var all = BIB.data().entries.map(function(e,i){return {e:e,i:i};})
+            .filter(function(x){return x.e.type===type;})
+            .sort(function(a,b){return a.e.name.localeCompare(b.e.name);});
+  document.getElementById('sub').textContent =
+    all.length + ' ' + (all.length===1?'entry':'entries') + ' · index ' + (BIB.data().generated||'');
+
+  var listEl = document.getElementById('list');
+  function firstSentence(t){ if(!t) return ''; var s=t.replace(/[#*`>|]/g,'').replace(/\s+/g,' ').trim(); var m=s.match(/^.*?[.!?](\s|$)/); return (m?m[0]:s).slice(0,180); }
+  function render(qv){
+    qv=(qv||'').toLowerCase().trim();
+    var rows = all.filter(function(x){ return !qv || (x.e.name+' '+x.e.body+' '+x.e.meta).toLowerCase().indexOf(qv)>=0; });
+    listEl.innerHTML = rows.length ? rows.map(function(x){
+      var sub = x.e.subtype ? ' · '+BIB.esc(x.e.subtype) : '';
+      return '<a class="row" href="entry.html?i='+x.i+'">'+
+        '<h3>'+BIB.esc(x.e.name)+'</h3>'+
+        '<div class="line">'+BIB.esc(x.e.file)+sub+'</div>'+
+        '<div class="line" style="margin-top:4px;color:#cdbfa8">'+BIB.esc(firstSentence(x.e.body))+'</div>'+
+      '</a>';
+    }).join('') : '<p class="muted">No '+BIB.esc(type)+' entries'+(qv?' match “'+BIB.esc(qv)+'”.':' yet. Use ✎ Add new.')+'</p>';
+  }
+  render('');
+  document.getElementById('q').addEventListener('input', function(){ render(this.value); });
+})();
+</script>
+</body>
+</html>
